@@ -74,7 +74,7 @@ class Home extends React.Component {
 	 onSpeechResultsHandler = result => {
 	 	if(this.state.keyWordActivated == true){
 	 		this.setState({ text: result.value[0], keyWordActivated: false });
-	    // this.sendMessage(result.value[0]);
+	    	this.sendMessage(result.value[0]);
 	} else{
 		if(result.value[0].includes(_keyWord)){
 			this.setState({ keyWordActivated: true , text: "" })
@@ -93,7 +93,7 @@ class Home extends React.Component {
 onSpeechPartialResultsHandler = result => {
 	if(this.state.keyWordActivated == false){
 		if(result.value[0].includes(_keyWord)){
-			Voice.stop();
+			Voice.cancel();
 			this.setState({ keyWordActivated: true, text: ""});
 	      // Tts.speak("Yes boss.");
 	      // (async() => {
@@ -101,8 +101,9 @@ onSpeechPartialResultsHandler = result => {
 	      //   Voice.start();
 	      // })();
 	  }
+	}else {
+		this.setState({ text:result.value[0]});
 	}
-	this.setState({ text:result.value[0]});
 	console.log(result.value[0])
 }
 
@@ -218,7 +219,10 @@ onSpeechErrorHandler = error => {
 		 		</View>
 	 		</View>
 	 		)}
-	}
+	}// violations 
+	// what they see for fire
+	// i need additional inots 
+	// status report 
 
 	      // <Text style={{ fontSize: 20, color: 'red' }}>{this.state.text}</Text>
 
