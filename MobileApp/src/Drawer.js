@@ -12,11 +12,12 @@ const ProductStack = createStackNavigator(
 		Home: HomeScreen,
 		Settings: SettingsScreen,
 	},
-	// {
-	// 	// initialRouteName: "Settings",
-
-	// }
-	);
+	{
+		// initialRouteName: "Settings",
+		// navigationOptions:()=>({
+		// 	title: 'Home',
+		// })
+	});
 
 const DrawerContainer = createDrawerNavigator(
 	{

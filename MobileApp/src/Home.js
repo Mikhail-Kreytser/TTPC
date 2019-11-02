@@ -5,9 +5,12 @@ import Voice from 'react-native-voice';
 import Tts from 'react-native-tts';
 import delay from 'delay'
 import Hamburger from '../assets/Hamburger.png'
+import './global.js'
 import { withNavigation } from 'react-navigation'
-const _backendEndpoint = 'http://192.168.43.157:3000'
-const _keyWord = "Jarvis";
+import SendSMS from 'react-native-sms'
+import email from 'react-native-email'
+const _backendEndpoint = 'http://192.168.43.140:3000'
+// const _backendEndpoint = 'http://localhost:3000'
 
 class Home extends React.Component {
 	constructor(props) {
@@ -15,6 +18,7 @@ class Home extends React.Component {
 
 		this.state = {
 			keyWordActivated: false,
+			responseFromServer: '',
 			text: '',
 			status: '',
 			userPayload: '',
@@ -33,15 +37,15 @@ class Home extends React.Component {
 
 	componentDidMount() {
 		this.getSession();
-		console.log(this.props.navigation)
-
 	}
 
 	/**
 	 * Get Watson session
 	 */
 	 getSession = async () => {
-	 	const response = await axios.get(`${_backendEndpoint}/api/session`, this.state.userPayload) 
+	 	const response = await axios.get(`${_backendEndpoint}/api/session`, this.state.userPayload).catch(error => {
+		    console.log(error.response)
+		});
 	 	this.init(response.data.result);
 	 }
 
@@ -64,7 +68,7 @@ class Home extends React.Component {
 	 			Voice.start();
 	 		})();
 	 		this.setState({ userSession: session });
-	 		this.setState({ text: response.data.result.output.generic[0].text });
+	 		this.setState({ responseFromServer: response.data.result.output.generic[0].text });
 	 		this.setState({ userPayload: response.data });
 	 	}
 	 	catch (err) { console.log('Failed to retrive data from Watson API', err) }
@@ -72,14 +76,15 @@ class Home extends React.Component {
 
 
 	 onSpeechResultsHandler = result => {
+	 	console.log("resultHandler")
 	 	if(this.state.keyWordActivated == true){
 	 		this.setState({ text: result.value[0], keyWordActivated: false });
 	    	this.sendMessage(result.value[0]);
 	} else{
-		if(result.value[0].includes(_keyWord)){
+		if(result.value[0].includes(global.TriggerWord)){
 			this.setState({ keyWordActivated: true , text: "" })
 			Tts.speak("Yes boss.");
-			Voice.cancel();
+			Voice.stop();
 			(async() => {
 				await delay(800);
 				Voice.start();
@@ -92,14 +97,14 @@ class Home extends React.Component {
 
 onSpeechPartialResultsHandler = result => {
 	if(this.state.keyWordActivated == false){
-		if(result.value[0].includes(_keyWord)){
+		if(result.value[0].includes(global.TriggerWord)){
 			Voice.cancel();
 			this.setState({ keyWordActivated: true, text: ""});
-	      // Tts.speak("Yes boss.");
-	      // (async() => {
-	      //   await delay(800);
-	      //   Voice.start();
-	      // })();
+	      Tts.speak("Yes boss.");
+	      (async() => {
+	        await delay(800);
+	        Voice.start();
+	      })();
 	  }
 	}else {
 		this.setState({ text:result.value[0]});
@@ -110,18 +115,18 @@ onSpeechPartialResultsHandler = result => {
 onSpeechErrorHandler = error => {
 	if(error.error.message == "5/Client side error"){
 		console.log(error.error.message)
-		Voice.cancel()
-	    // Voice.stop();
+		// Voice.cancel()
+	    Voice.stop();
 	    Voice.start()
 	} else if(error.error.message == "6/No speech input"){
 		console.log(error.error.message)
-		Voice.cancel()
-	    // Voice.stop();
+		// Voice.cancel()
+	    Voice.stop();
 	    Voice.start()
 	} else if(error.error.message == "7/No match"){
 		console.log(error.error.message)
-		Voice.cancel()
-	    // Voice.stop();
+		// Voice.cancel()
+	    Voice.stop();
 	    Voice.start()
 	} else {
 		console.error("8/RecognitionService busy")
@@ -172,9 +177,34 @@ onSpeechErrorHandler = error => {
 
 	 		console.log(response.data.result.output)
 
-	 		this.setState({ text: response.data.result.output.generic[0].text });
-	 		console.log(response.data.result.output)
+	 		this.setState({ responseFromServer: response.data.result.output.generic[0].text });
+
+	 		// different terms between different departments
 	 		Tts.speak(response.data.result.output.generic[0].text);
+
+	 		var foundEntities = ''
+	 		for (var i = response.data.result.output.entities.length - 1; i >= 0; i--) {
+	 			foundEntities += response.data.result.output.entities[i].entity + " : " + response.data.result.output.entities[i].value + "\n"
+	 		}
+	 		console.log(response.data.result.output.intents[0].intent)
+	 		if(global.ContactMode == "sms"){
+		 		SendSMS.send({
+			        body: 'Intent: ' + response.data.result.output.intents[0].intent + '\n' + foundEntities,
+			        recipients: ['6467529179'],
+			        successTypes: ['sent', 'queued'],
+			        allowAndroidSendWithoutReadPermission: true
+			    }, (completed, cancelled, error) => {
+			 
+			        console.log('SMS Callback: completed: ' + completed + ' cancelled: ' + cancelled + 'error: ' + error);
+			 
+			    });
+		 	} else {
+		 		const to = ['tiaan@email.com', 'foo@bar.com'] // string or array of email addresses
+		        email(to, {
+		            subject: 'Intent: ' + response.data.result.output.intents[0].intent,
+		            body: 'Intent: ' + response.data.result.output.intents[0].intent + '\n' + foundEntities,
+		        }).catch(console.error)
+		 	}
 	 		(async() => {
 	 			await delay(800);
 	 			Voice.start();
@@ -205,6 +235,7 @@ onSpeechErrorHandler = error => {
 		 		</View>
 
 		 		<Text style={{ fontSize: 20, color: 'blue' }}>{this.state.status}</Text>
+		 		<Text style={{ fontSize: 20, color: 'red' }}>{this.state.responseFromServer}</Text>
 
 		 		<TextInput
 			 		multiline={true}
@@ -217,6 +248,15 @@ onSpeechErrorHandler = error => {
 			 		title="Manual Submit"
 			 		onPress={() => this.sendMessage(this.state.text)}/>	
 		 		</View>
+		 		<Text>
+		          Trigger Word: {global.TriggerWord}
+		        </Text>
+		 		<Text>
+		          Contact Point: {global.ContactPoint}
+		        </Text>
+		 		<Text>
+		          Contact Mode: {global.ContactMode}
+		        </Text>
 	 		</View>
 	 		)}
 	}// violations 
