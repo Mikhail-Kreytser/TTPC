@@ -1,0 +1,107 @@
+{
+    "vehicleArray": [
+      {
+        "vehicle": [
+          {
+            "entity" : "color",
+            "value" : "black"
+          },
+          {"entity" :"carType",
+            "value" : "sedan"},
+          {"entity" :"carDesc",
+            "value" :"Dodge"},
+          {"entity" :"carModel",
+            "value" :"Challenger"},
+          {"entity" :"licensePlate",
+            "value" :125232},
+          {"entity" :"ownerName",
+            "value" :"Furk"},
+          {"entity" :"warrants",
+            "value":true}
+        ]
+      },{
+        "vehicle": [
+          {
+            "entity" : "color",
+            "value" : "blue"
+          },
+          {"entity" :"carType",
+            "value" : "sedan"},
+          {"entity" :"carDesc",
+            "value" :"Toyota"},
+          {"entity" :"carModel",
+            "value" :"Corola"},
+          {"entity" :"licensePlate",
+            "value" :15511},
+          {"entity" :"ownerName",
+            "value" :"Ben"},
+          {"entity" :"warrants",
+            "value":false}
+        ]
+      },
+      {
+        "vehicle": [
+          {
+            "entity" : "color",
+            "value" : "white"
+          },
+          {"entity" :"carType",
+            "value" : "sedan"},
+          {"entity" :"carDesc",
+            "value" :"Honda"},
+          {"entity" :"carModel",
+            "value" :"Civic"},
+          {"entity" :"licensePlate",
+            "value" :12345},
+          {"entity" :"ownerName",
+            "value" :"Jane"},
+          {"entity" :"warrants",
+            "value":true}
+        ]
+      }
+    ],
+    "peopleArray": [
+      {
+        "person": [
+          { "entity" : "name",
+            "value" : "Betty Smith"},
+          {"entity" :"address",
+            "value" : "160 Convent Avenue"},
+          {"entity" :"description",
+            "value" :"tall, slim, blonde hair"},
+          {"entity" :"age",
+            "value" :"21"},
+          {"entity" :"warrants",
+            "value":true}
+        ]
+      },{
+        "person": [
+          { "entity" : "name",
+            "value" : "Mike Brown"},
+          {"entity" :"address",
+            "value" : "160 Broadway Avenue"},
+          {"entity" :"description",
+            "value" :"tall, slim, brown hair"},
+          {"entity" :"age",
+            "value" :"29"},
+          {"entity" :"warrants",
+            "value":false}
+        ]
+      },
+      {
+        "person": [
+          { "entity" : "name",
+            "value" : "William Johnson"},
+          {"entity" :"address",
+            "value" : "210 Oriental Avenue"},
+          {"entity" :"description",
+            "value" :"tall, regular build, bald"},
+          {"entity" :"age",
+            "value" :"34"},
+          {"entity" :"warrants",
+            "value":true}
+        ]
+      }
+    ]
+ 
+  }
