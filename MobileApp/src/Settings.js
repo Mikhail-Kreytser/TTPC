@@ -10,6 +10,7 @@ class SettingsScreen extends Component {
 		check: true,
 		switch: false,
 		value: 40,
+		ListenInterruption: global.ListenInterruption,
 		Contact: global.ContactPoint,
 		ContactMode: global.ContactMode,
 		triggerWord: global.TriggerWord,
@@ -35,6 +36,22 @@ class SettingsScreen extends Component {
                         onChangeText={text => {global.TriggerWord = text}}
                         style={{justifyContent: 'center'}} />
                     </View>
+                </View>
+                <View style={{flexDirection:"row"}}>
+                    <View style={{flex:1}}>
+		            	<Text style={addItemStyles.inputLabels}>Key Word Pickup:</Text>
+		            </View>
+		            <Picker
+					  selectedValue={this.state.ListenInterruption}
+					  style={{justifyContent: 'center', height: 70, width: 230}}
+					  onValueChange={(itemValue, itemIndex) =>{
+						    this.setState({ListenInterruption: itemValue})
+						    global.ListenInterruption = itemValue;
+						}
+					  }>
+					  <Picker.Item label="Loud Environment" value="loudEnvironment" />
+					  <Picker.Item label="Quite Environment" value="quiteEnvironment" />
+					</Picker>
                 </View>
                 <View style={{flexDirection:"row"}}>
                     <View style={{flex:1}}>
@@ -101,13 +118,6 @@ class SettingsScreen extends Component {
 		)
 	}
 }
-
-// <View style={addItemStyles.inputField}>
-//                         <TextInput 
-//                         placeholder={global.TriggerWord}
-//                         onChangeText={text => {global.TriggerWord = text}}
-//                         style={{justifyContent: 'flex-start',}} />
-//                     </View>
 
 const addItemStyles = StyleSheet.create({
     wrapper: {

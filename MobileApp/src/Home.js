@@ -9,7 +9,7 @@ import './global.js'
 import { withNavigation } from 'react-navigation'
 import SendSMS from 'react-native-sms'
 import email from 'react-native-email'
-const _backendEndpoint = 'http://192.168.43.140:3000'
+const _backendEndpoint = 'http://192.168.43.157:3000'
 // const _backendEndpoint = 'http://localhost:3000'
 
 class Home extends React.Component {
@@ -30,7 +30,9 @@ class Home extends React.Component {
 		Voice.onSpeechError = this.onSpeechErrorHandler.bind(this);
 		Voice.onSpeechPartialResults = this.onSpeechPartialResultsHandler.bind(this);
 
-		Tts.setDefaultLanguage('en-US');
+		this.handleOutsideComunication = this.handleOutsideComunication.bind(this);
+
+		Tts.setDefaultLanguage(global.Language);
 
 	}
 
@@ -43,15 +45,33 @@ class Home extends React.Component {
 	 * Get Watson session
 	 */
 	 getSession = async () => {
+	 	console.log("In getSession")
 	 	const response = await axios.get(`${_backendEndpoint}/api/session`, this.state.userPayload).catch(error => {
 		    console.log(error.response)
 		});
 	 	this.init(response.data.result);
 	 }
 
-	/**
-	 * Greeting when assistant is ready
-	 */
+	 handleOutsideComunication = (response, foundEntities) =>{
+	 	console.log("In handleOutsideComunication")
+		if(global.ContactMode == "sms"){
+			SendSMS.send({
+				body: 'Intent: ' + response.data.result.output.intents[0].intent + '\n' + foundEntities,
+				recipients: ['6467529179'],
+				successTypes: ['sent', 'queued'],
+				allowAndroidSendWithoutReadPermission: true
+				}, (completed, cancelled, error) => {
+					console.log('SMS Callback: completed: ' + completed + ' cancelled: ' + cancelled + 'error: ' + error);
+			});
+		} else {
+			const to = ['tiaan@email.com', 'foo@bar.com'] // string or array of email addresses
+			email(to, {
+				subject: 'Intent: ' + response.data.result.output.intents[0].intent,
+				body: 'Intent: ' + response.data.result.output.intents[0].intent + '\n' + foundEntities,
+				}).catch(console.error)
+		}
+	 }
+
 	 init = async session => {
 	 	try {
 	 		const initialPayload = {
@@ -65,8 +85,9 @@ class Home extends React.Component {
 	 		Tts.speak(response.data.result.output.generic[0].text);
 	 		(async() => {
 	 			await delay(2000);
-	 			Voice.start();
+	 			Voice.start(global.Language);;
 	 		})();
+	 		console.log("Got Session:" + session.session_id)
 	 		this.setState({ userSession: session });
 	 		this.setState({ responseFromServer: response.data.result.output.generic[0].text });
 	 		this.setState({ userPayload: response.data });
@@ -76,58 +97,60 @@ class Home extends React.Component {
 
 
 	 onSpeechResultsHandler = result => {
-	 	console.log("resultHandler")
+	 	console.log("In onSpeechResultsHandler")
 	 	if(this.state.keyWordActivated == true){
 	 		this.setState({ text: result.value[0], keyWordActivated: false });
 	    	this.sendMessage(result.value[0]);
-	} else{
-		if(result.value[0].includes(global.TriggerWord)){
-			this.setState({ keyWordActivated: true , text: "" })
-			Tts.speak("Yes boss.");
-			Voice.stop();
-			(async() => {
-				await delay(800);
-				Voice.start();
-			})();
-		}else {
-			Voice.start();
+			Voice.start(global.Language);;
+		} else{
+			if(result.value[0].includes(global.TriggerWord)){
+				this.setState({ keyWordActivated: true , text: "" })
+				Tts.speak("Yes boss.");
+				// Voice.stop();
+				(async() => {
+					await delay(800);
+					Voice.start(global.Language);;
+				})();
+			}else {
+				Voice.start(global.Language);;
+			}
 		}
 	}
-}
 
 onSpeechPartialResultsHandler = result => {
-	if(this.state.keyWordActivated == false){
+	console.log("In onSpeechPartialResultsHandler: " + result.value[0])
+	if(this.state.keyWordActivated == false && global.ListenEnvironment == "loudEnvironment"){
 		if(result.value[0].includes(global.TriggerWord)){
 			Voice.cancel();
 			this.setState({ keyWordActivated: true, text: ""});
 	      Tts.speak("Yes boss.");
 	      (async() => {
 	        await delay(800);
-	        Voice.start();
+	        Voice.start(global.Language);;
 	      })();
 	  }
 	}else {
 		this.setState({ text:result.value[0]});
 	}
-	console.log(result.value[0])
 }
 
 onSpeechErrorHandler = error => {
+	 console.log("In onSpeechErrorHandler")
 	if(error.error.message == "5/Client side error"){
 		console.log(error.error.message)
 		// Voice.cancel()
-	    Voice.stop();
-	    Voice.start()
+	    // Voice.stop();
+	    Voice.start(global.Language);
 	} else if(error.error.message == "6/No speech input"){
 		console.log(error.error.message)
 		// Voice.cancel()
-	    Voice.stop();
-	    Voice.start()
+	    // Voice.stop();
+	    Voice.start(global.Language);
 	} else if(error.error.message == "7/No match"){
 		console.log(error.error.message)
 		// Voice.cancel()
-	    Voice.stop();
-	    Voice.start()
+	    // Voice.stop();
+	    Voice.start(global.Language);
 	} else {
 		console.error("8/RecognitionService busy")
 	}
@@ -137,22 +160,26 @@ onSpeechErrorHandler = error => {
 
 	// Listening to start
 	onSpeechStartHandler = () => {
+		console.log("onSpeechStartHandler")
 		this.setState({ status: 'Listening...' });
 	}
 
 	// Listening to end
 	onSpeechEndHandler = () => {
+		console.log("onSpeechEndHandler")
 		this.setState({ status: 'Voice Processed' });
 	}
 
 	// Listening to press button to speak
 	onStartButtonPress = e => {
-		Voice.start('en-US');
+		console.log("onStartButtonPress")
+		Voice.start(global.Language);
 		Tts.stop();
 	}
 
 	// Listening to release button to speak
 	onStopButtonPress = e => {
+		console.log("onStopButtonPress")
 	  // Voice.stop();
 	  this.setState({ status: '' });
 	  Voice.cancel()
@@ -163,7 +190,10 @@ onSpeechErrorHandler = error => {
 	 * send message to Watson
 	 */
 	 sendMessage = async payload => {
+	 console.log("In sendMessage")
+
 	 	try {
+	 Tts.setDefaultLanguage(global.Language);
 	 		let { userSession } = this.state;
 	 		let inputPayload = {
 	 			input: {
@@ -175,39 +205,71 @@ onSpeechErrorHandler = error => {
 	 		let responseData = { ...inputPayload, ...userSession }
 	 		let response = await axios.post(`${_backendEndpoint}/api/message`, responseData)
 
-	 		console.log(response.data.result.output)
+	 		var genericResponce = response.data.result.output.generic[0];
+	 		// if( genericResponce.generic[0] == undefined){
+	 		// 	this.setState({ responseFromServer: "Roger that." });
+	 		// 	genericResponce = "Roger that."
+	 		// } else {
+	 		// 	genericResponce = genericResponce.generic[0]
+	 		// }
+	 		this.setState({ responseFromServer: genericResponce.text });
 
-	 		this.setState({ responseFromServer: response.data.result.output.generic[0].text });
+	 		Tts.speak(genericResponce.text);
 
-	 		// different terms between different departments
-	 		Tts.speak(response.data.result.output.generic[0].text);
+	 		var foundEntities = '';
+	 		var contactLicensePlate = '';
+	 		var userIntent = response.data.result.output.intents[0].intent;
+	 		for (var i = 0; i < response.data.result.output.entities.length; i++) {
+	 			var userEntity = response.data.result.output.entities[i].entity;
+	 			var userEntityValue = response.data.result.output.entities[i].value;
+	 			if(userIntent != null && "getSuspiciousVehicleData" == userIntent && userEntity == "sys-number"){
+	 				contactLicensePlate +=userEntityValue
+	 			} else if (userIntent != null && "getPersonInfo" == userIntent && userEntity == "sys-person") {
+					const personResponse = await axios.get(`${_backendEndpoint}/api/getPersonData?usersName=${encodeURI(userEntityValue)}`, this.state.userPayload).catch(error => {
+				    	console.log(error.response)});
 
-	 		var foundEntities = ''
-	 		for (var i = response.data.result.output.entities.length - 1; i >= 0; i--) {
-	 			foundEntities += response.data.result.output.entities[i].entity + " : " + response.data.result.output.entities[i].value + "\n"
+					if(personResponse.data.error){
+						console.log(personResponse.data.error)
+						this.setState({responseFromServer:"No data found"})
+					} else {
+						var personEntities = personResponse.data.person;
+						var outputFoundData = "";
+						for (var i = personEntities.length - 1; i >= 0; i--) {
+							outputFoundData += personEntities[i].entity + " = " + personEntities[i].value + "\n"
+						}
+						this.setState({responseFromServer:outputFoundData})
+					}
+
+	 			}else {
+		 			foundEntities += userEntity + " : " + userEntityValue + "\n"
+		 		}
 	 		}
-	 		console.log(response.data.result.output.intents[0].intent)
-	 		if(global.ContactMode == "sms"){
-		 		SendSMS.send({
-			        body: 'Intent: ' + response.data.result.output.intents[0].intent + '\n' + foundEntities,
-			        recipients: ['6467529179'],
-			        successTypes: ['sent', 'queued'],
-			        allowAndroidSendWithoutReadPermission: true
-			    }, (completed, cancelled, error) => {
-			 
-			        console.log('SMS Callback: completed: ' + completed + ' cancelled: ' + cancelled + 'error: ' + error);
-			 
-			    });
-		 	} else {
-		 		const to = ['tiaan@email.com', 'foo@bar.com'] // string or array of email addresses
-		        email(to, {
-		            subject: 'Intent: ' + response.data.result.output.intents[0].intent,
-		            body: 'Intent: ' + response.data.result.output.intents[0].intent + '\n' + foundEntities,
-		        }).catch(console.error)
-		 	}
+	 		if(contactLicensePlate != '' ){
+		 		foundEntities += "licensePlate" + " : " + contactLicensePlate + "\n"	 			
+	 		}
+ 			if(userIntent != null && "getSuspiciousVehicleData" == userIntent && contactLicensePlate != ''){
+				const vehicleResponse = await axios.get(`${_backendEndpoint}/api/getVehicleData?UserLicensePlate=${contactLicensePlate}`, this.state.userPayload).catch(error => {
+				    console.log(error.response)
+				});
+				if(vehicleResponse.data.error){
+					console.log(vehicleResponse.data.error)
+					this.setState({responseFromServer:"No data found"})
+				} else {
+					var vehicleEntities = vehicleResponse.data.vehicle;
+					var outputFoundData = "";
+					for (var i = vehicleEntities.length - 1; i >= 0; i--) {
+						outputFoundData += vehicleEntities[i].entity + " = " + vehicleEntities[i].value + "\n"
+					}
+					this.setState({responseFromServer:outputFoundData})
+				}
+ 			}
+
+	 		if(userIntent != null && ("getSuspiciousVehicleData" != userIntent || "getPersonInfo" != userIntent)){
+	 			this.handleOutsideComunication(response, foundEntities);
+	 		}
 	 		(async() => {
 	 			await delay(800);
-	 			Voice.start();
+	 			Voice.start(global.Language);;
 	 		})();
 	 	}
 	 	catch (err) { console.log('Failed to send data to Watson API', err) }
@@ -251,6 +313,9 @@ onSpeechErrorHandler = error => {
 		 		<Text>
 		          Trigger Word: {global.TriggerWord}
 		        </Text>
+		        <Text>
+		          Environment: {global.ListenEnvironment}
+		        </Text>
 		 		<Text>
 		          Contact Point: {global.ContactPoint}
 		        </Text>
@@ -259,10 +324,7 @@ onSpeechErrorHandler = error => {
 		        </Text>
 	 		</View>
 	 		)}
-	}// violations 
-	// what they see for fire
-	// i need additional inots 
-	// status report 
+	}
 
 	      // <Text style={{ fontSize: 20, color: 'red' }}>{this.state.text}</Text>
 

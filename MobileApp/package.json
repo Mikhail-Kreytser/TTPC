@@ -12,6 +12,7 @@
   "dependencies": {
     "axios": "0.19.0",
     "delay": "^4.3.0",
+    "google-translate-api": "^2.3.0",
     "react": "16.9.0",
     "react-native": "0.61.3",
     "react-native-email": "1.0.2",
